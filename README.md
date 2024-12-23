@@ -11,3 +11,14 @@
   **_Buffer (or Queue)_:** A shared resource where the producer places items, and the consumer takes items from.<br/>
   **_Synchronization_:** Mechanisms like locks, semaphores, or conditions are used to ensure that producers and consumers do not interfere with each other.<br/>
   **_Blocking_:** If the buffer is full, the producer should wait until there is space. If the buffer is empty, the consumer should wait until there are items to consume.<br/>
+
+
+**Thread safety in java** is the process to make our program safe to use in multithreaded environment, there are different ways through which we can make our program thread safe.
+
+1. *Synchronization is the easiest and most widely used tool for thread safety in java.*<br>
+2. *Use of Atomic Wrapper classes from java.util.concurrent.atomic package. For example AtomicInteger*<br>
+3. *Use of locks from java.util.concurrent.locks package.*<br>
+4. *Using thread safe collection classes, check this post for usage of ConcurrentHashMap for thread safety.*<br>
+5. *Using volatile keyword with variables to make every thread read the data from memory, not read from thread cache.*<br>
+
+<ins>*We should not use any object that is maintained in a constant pool, for example String should not be used for synchronization because if any other code is also locking on same String, it will try to acquire lock on the same reference object from String pool and even though both the codes are unrelated, they will lock each other.*</ins>
