@@ -23,6 +23,166 @@
 
 <ins>*We should not use any object that is maintained in a constant pool, for example String should not be used for synchronization because if any other code is also locking on same String, it will try to acquire lock on the same reference object from String pool and even though both the codes are unrelated, they will lock each other.*</ins>
 
+## Tread Pool
+A Thread Pool is a group of pre-instantiated, reusable threads that execute tasks instead of creating new threads every time. This improves performance and resource management, especially in multi-threaded applications.
+
+Java provides ThreadPoolExecutor, which is the primary implementation of a thread pool.
+
+### 1️⃣ What is a Thread Pool?
+A Thread Pool maintains multiple worker threads to perform tasks concurrently. Instead of creating a new thread for each task, it reuses existing threads.
+
+##### Why Use a Thread Pool?
+*  ✅ Better Performance - Avoids the overhead of creating/destroying threads.
+*  ✅ Efficient Resource Usage - Controls the number of active threads.
+*  ✅ Prevents System Overload - Avoids excessive thread creation that can slow down the system.
+
+  ### 2️⃣ ThreadPoolExecutor - The Core of Thread Pools
+ThreadPoolExecutor is the most flexible way to create and manage thread pools.
+
+###### Creating a ThreadPoolExecutor
+```java
+import java.util.concurrent.*;
+
+public class ThreadPoolExample {
+    public static void main(String[] args) {
+        ExecutorService executor = new ThreadPoolExecutor(
+            2,          // Core pool size (minimum number of threads)
+            5,          // Maximum pool size
+            60L,        // Keep-alive time for extra threads
+            TimeUnit.SECONDS, 
+            new LinkedBlockingQueue<>(10)  // Task queue (waiting tasks)
+        );
+
+        // Submitting tasks to the thread pool
+        for (int i = 1; i <= 10; i++) {
+            executor.submit(() -> {
+                System.out.println(Thread.currentThread().getName() + " is executing a task");
+                try {
+                    Thread.sleep(2000); // Simulating work
+                } catch (InterruptedException e) {
+                    e.printStackTrace();
+                }
+            });
+        }
+
+        executor.shutdown(); // Gracefully shut down the pool after task completion
+    }
+}
+
+```
+#### Output (Example)
+```java
+pool-1-thread-1 is executing a task
+pool-1-thread-2 is executing a task
+pool-1-thread-1 is executing a task
+pool-1-thread-2 is executing a task
+...
+```
+**✅ Key Points:**
+
+*  **Core Pool Size (2)**: Minimum threads always running.
+*  **Max Pool Size (5)**: If more tasks arrive, extra threads are created (up to 5).
+*  **Keep-alive Time (60s)**: Extra threads (beyond 2) are destroyed if idle for 60s.
+*  **Task Queue (10)**: Holds waiting tasks when all threads are busy.
+
+## 3️⃣ Thread Pool Types in Java (Executors Factory)
+Java provides Executors class for easier thread pool creation.
+
+### 1. Fixed Thread Pool
+*  🔹 Use when the number of tasks is stable
+  ```java
+ExecutorService fixedPool = Executors.newFixedThreadPool(3);
+ ```
+*  Creates a pool with a fixed number of threads.
+*  Extra tasks wait in the queue until a thread becomes available.
+
+### 2. Cached Thread Pool
+* 🔹 Use when tasks are unpredictable in number
+```java
+ExecutorService cachedPool = Executors.newCachedThreadPool();
+
+```
+*  Creates new threads as needed.
+*  Reuses idle threads instead of creating new ones.
+*  No task queue, so it scales dynamically.
+
+### 3. Single Thread Executor
+* 🔹 Use for sequential task execution
+```java
+ExecutorService singleThreadPool = Executors.newSingleThreadExecutor();
+
+```
+*  Only one thread processes tasks one by one.
+  
+### 4. Scheduled Thread Pool
+*  🔹 Use for delayed or periodic tasks.
+```java
+ScheduledExecutorService scheduledPool = Executors.newScheduledThreadPool(2);
+```
+*  Schedules tasks with delays or periodic execution.
+
+#### Example: Running a Task Every 2 Seconds
+```java
+ScheduledExecutorService scheduler = Executors.newScheduledThreadPool(1);
+scheduler.scheduleAtFixedRate(() -> {
+    System.out.println("Executing periodic task...");
+}, 0, 2, TimeUnit.SECONDS);
+```
+##### 4️⃣ Comparing Different Thread Pools
+|Pool Type|	Threads|	Use Case|
+| --- | --- |--- |
+|FixedThreadPool|	Fixed number|	Stable workloads|
+|CachedThreadPool|	Dynamic	|Large, unpredictable workloads|
+|SingleThreadExecutor|	1|	Sequential execution|
+|ScheduledThreadPool|	Fixed number|	Scheduled/Periodic tasks|
+
+### 5️⃣ How Tasks Are Executed in ThreadPoolExecutor
+*  A task is submitted to the thread pool.
+*  If there are idle threads, the task is assigned immediately.
+*  If all threads are busy, the task goes to the queue.
+*  If the queue is full, the pool creates new threads (up to the max pool size).
+*  If max threads are reached, the task is rejected.
+
+### 6️⃣ Gracefully Shutting Down a Thread Pool
+Always shut down the thread pool after use to free resources.
+```java
+executor.shutdown(); // Initiates an orderly shutdown (waits for tasks to finish)
+
+if (!executor.awaitTermination(5, TimeUnit.SECONDS)) {
+    executor.shutdownNow(); // Forces shutdown, interrupts running tasks
+}
+
+```
+### 7️⃣ Custom Rejection Policy in ThreadPoolExecutor
+When tasks exceed max threads & queue size, new tasks are rejected. You can handle rejected tasks using RejectedExecutionHandler.
+
+##### Example: Custom Rejection Policy
+```java
+ExecutorService executor = new ThreadPoolExecutor(
+    2, 4, 60L, TimeUnit.SECONDS, new ArrayBlockingQueue<>(2),
+    new RejectedExecutionHandler() {
+        @Override
+        public void rejectedExecution(Runnable r, ThreadPoolExecutor executor) {
+            System.out.println("Task rejected: " + r.toString());
+        }
+    }
+);
+```
+![image](https://github.com/user-attachments/assets/183ca473-53ab-4e88-b779-f438c3187af6)
+![image](https://github.com/user-attachments/assets/53bc47b0-6dea-4192-92e7-533a47fed0d7)
+![image](https://github.com/user-attachments/assets/686f9e2c-db28-4405-b3ed-fbc878e69aee)
+![image](https://github.com/user-attachments/assets/df0ec0ca-9060-46f8-83b3-f6caa7cf11a2)
+![image](https://github.com/user-attachments/assets/819803e5-b6ed-4f4a-8185-3eefb098569a)
+![image](https://github.com/user-attachments/assets/159f8d31-3672-4314-bbcd-9bfd0c35f1e2)
+
+
+###### 8️⃣ Key Takeaways
+*  ✅ ThreadPoolExecutor is a customizable thread pool.
+*  ✅ Use Executors for easy thread pool creation.
+*  ✅ Thread pools reuse threads to improve performance.
+*  ✅ Always shut down thread pools to free resources.
+*  ✅ Use custom rejection policies for handling overloads.
+
 
 ### Future and Callable in Java
 Future and Callable are used in Java's concurrent programming to handle tasks that run asynchronously and return results.
