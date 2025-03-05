@@ -447,8 +447,203 @@ public class CompletableFutureAllOf {
 *  Use Future if you only need a basic async computation.
 *  Use CompletableFuture if you need chaining, non-blocking execution, and better error handling.
 
+  ## ForkJoinPool / Work Stealing Pool Executor
 
+![image](https://github.com/user-attachments/assets/5cc5f842-729f-402d-9856-8c9693b8f3ef)
+![image](https://github.com/user-attachments/assets/35ed4bc9-636e-4c11-a8e5-26d573a2d52b)
+![image](https://github.com/user-attachments/assets/41ed3194-884f-4567-8367-52430653cb3c)
 
+```java
+class ComputeSumTask extends RecursiveTask<Integer> {
+  int start;
+  int end;
+  ComputeSumTask(int start, int end) (
+    this.start start;
+    this.end end;
+)
+  @Override
+  protected Integer compute(){
+    if (end-start <= 4){
+      int totalsum=0;
+      for (int i= start; i < end; i++) {
+        totalSum+= 1;
+      return totalsum;
+  }
+  else {
+//split the task
+    int mid (start end)/2;
+  ComputeSumTask LeftTask = new ComputeSumTask(start, mid);
+  ComputeSumTask rightTask = new ComputeSumTask(mid + 1, end);
+
+    // Fork the subtasks for parallel execution:
+  LeftTask.fork();
+  rightTask.fork();
+
+    // Combine the results of subtasks
+  int LeftResult leftTask.join();
+  int rightResult rightTask.join();
+
+  // Continue the results
+  return LeftResult rightResult;
+}
+}
+}
+
+```
+### ForkJoinPool in Java
+ForkJoinPool is a specialized thread pool designed for parallel execution of tasks using the divide-and-conquer approach. It is part of Java's Fork/Join Framework, introduced in Java 7.
+
+##### 📌 When to Use ForkJoinPool?
+*  Best for recursive and parallelizable tasks.
+*  Ideal for CPU-intensive operations like sorting, matrix multiplication, or searching.
+*  Efficient when tasks can be split into smaller independent subtasks.
+
+#### 1️⃣ Fork/Join Framework Overview
+*   🔹 Uses a **work-stealing algorithm**, where idle threads "steal" work from busy threads.
+*   🔹 Breaks a large task into smaller sub-tasks, processes them in parallel, and then combines results.
+
+#### 2️⃣ Creating a ForkJoinPool
+  We can create a ForkJoinPool using:
+```java
+ForkJoinPool pool = new ForkJoinPool(); // Uses available processor cores
+```
+or specify the number of worker threads:
+```java
+ForkJoinPool pool = new ForkJoinPool(4); // Uses available processor cores
+```
+#### 3️⃣ ForkJoinTask (RecursiveTask vs RecursiveAction)
+  Java provides two abstract classes for ForkJoinTask:
+
+1. **RecursiveTask<V> → Returns a result (for computations).**
+2. **RecursiveAction → No result (for tasks like modifying an array).**
+
+#### 🔹 Example 1: RecursiveTask (Summing an Array)
+```java
+import java.util.concurrent.*;
+
+class SumTask extends RecursiveTask<Integer> {
+    private int[] arr;
+    private int start, end;
+    private static final int THRESHOLD = 2; // Smallest chunk size
+
+    public SumTask(int[] arr, int start, int end) {
+        this.arr = arr;
+        this.start = start;
+        this.end = end;
+    }
+
+    @Override
+    protected Integer compute() {
+        if (end - start <= THRESHOLD) {
+            int sum = 0;
+            for (int i = start; i < end; i++) {
+                sum += arr[i];
+            }
+            return sum;
+        } else {
+            int mid = (start + end) / 2;
+            SumTask leftTask = new SumTask(arr, start, mid);
+            SumTask rightTask = new SumTask(arr, mid, end);
+
+            leftTask.fork(); // Asynchronously execute left subtask
+            int rightResult = rightTask.compute(); // Compute right subtask synchronously
+            int leftResult = leftTask.join(); // Wait for left subtask to complete
+
+            return leftResult + rightResult;
+        }
+    }
+}
+
+public class ForkJoinExample {
+    public static void main(String[] args) {
+        int[] numbers = {1, 2, 3, 4, 5, 6, 7, 8};
+        ForkJoinPool pool = new ForkJoinPool();
+
+        SumTask task = new SumTask(numbers, 0, numbers.length);
+        int result = pool.invoke(task); // Start computation
+
+        System.out.println("Sum: " + result);
+    }
+}
+```
+###### 🔹 Explanation
+*  ✔ The array is recursively divided until it reaches the THRESHOLD.
+*  ✔ Uses fork() to run tasks asynchronously.
+*  ✔ Uses join() to combine results.
+*  ✔ invoke(task) submits the task to ForkJoinPool.
+
+##### 🔹 Example 2: RecursiveAction (Parallel Sorting)
+```java
+import java.util.concurrent.*;
+
+class SortTask extends RecursiveAction {
+    private int[] arr;
+    private int start, end;
+    private static final int THRESHOLD = 3;
+
+    public SortTask(int[] arr, int start, int end) {
+        this.arr = arr;
+        this.start = start;
+        this.end = end;
+    }
+
+    @Override
+    protected void compute() {
+        if (end - start <= THRESHOLD) {
+            Arrays.sort(arr, start, end); // Directly sort small portions
+        } else {
+            int mid = (start + end) / 2;
+            SortTask leftTask = new SortTask(arr, start, mid);
+            SortTask rightTask = new SortTask(arr, mid, end);
+
+            invokeAll(leftTask, rightTask); // Execute in parallel
+        }
+    }
+}
+
+public class ParallelSortExample {
+    public static void main(String[] args) {
+        int[] numbers = {8, 3, 5, 2, 7, 6, 4, 1};
+        ForkJoinPool pool = new ForkJoinPool();
+
+        SortTask task = new SortTask(numbers, 0, numbers.length);
+        pool.invoke(task);
+
+        System.out.println("Sorted Array: " + Arrays.toString(numbers));
+    }
+}
+```
+
+##### 4️⃣ Key Methods in ForkJoinPool
+|Method|	Description|
+| ---| ---|
+|fork()|	Asynchronously starts a new subtask.|
+|join()|	Waits for a subtask to complete and returns its result.|
+|invoke(task)|	Submits and executes a task.|
+|invokeAll(t1,t2)|	Runs multiple tasks in parallel.|
+
+##### 5️⃣ ForkJoinPool vs. ThreadPoolExecutor
+|Feature|	ForkJoinPool|	ThreadPoolExecutor|
+| ---| ---| ---|
+|Best For|	Recursive, parallel tasks|	Independent tasks|
+|Work Stealing|	✅ Yes (idle threads steal work)|	❌ No (static allocation)|
+|Task Type|	Dependent (splittable) tasks|	Independent tasks|
+|Performance|	Faster for CPU-bound tasks|	Suitable for I/O-bound tasks|
+
+#### 6️⃣ When to Use ForkJoinPool?
+*  ✅ Best for Recursive Computations (e.g., parallel sorting, matrix multiplication).
+*  ✅ Heavy CPU-intensive tasks that can be split into independent subtasks.
+*  ✅ Work-stealing mechanism prevents idle threads.
+*  🚫 Avoid for simple thread management, use ThreadPoolExecutor instead.
+
+#### 7️⃣ Summary
+*  ✔ ForkJoinPool is a parallel execution framework in Java.
+*  ✔ RecursiveTask returns results, RecursiveAction does not.
+*  ✔ Uses fork/join for parallel processing.
+*  ✔ Work-stealing allows efficient CPU utilization.
+*  ✔ Best suited for divide-and-conquer problems.
+
+### virtual threads vs Normal threads
 
 
 
