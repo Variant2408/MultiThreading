@@ -645,6 +645,58 @@ public class ParallelSortExample {
 
 ### virtual threads vs Normal threads
 
+### Checked vs Unchecked Exceptions in Java : ###
+**Checked Exceptions :** 
+* Checked exceptions are exceptions that must be either declared in the method signature using throws or handled using try-catch. 
+* They are checked at compile-time. 
+* Examples: 
+ 1. IOException (e.g., file not found) 
+ 2. SQLException (e.g., database connection failure) 
+ 3. InterruptedException (e.g., thread interruption) 
+ ‍
+
+**Unchecked Exceptions :**  
+* Unchecked exceptions are runtime errors that do not require explicit handling. 
+* They are checked at runtime, meaning they occur due to logical errors in the program. 
+* Examples: 
+1. NullPointerException (e.g., calling a method on null) 
+2. ArrayIndexOutOfBoundsException (e.g., accessing an invalid array index) 
+3. ArithmeticException (e.g., division by zero) 
+
+### Difference between sleep() and wait()
+**sleep()->**
+* **Belongs to:** Thread class (static method)
+* **Used for:** Pausing the current thread for a specific time.
+* **Lock behavior:** Does not release any locks or monitors held by the thread.
+* **Exception:** Throws InterruptedException.
+* **Use case:** Useful when you want to delay execution (e.g., polling, timeouts).
+
+**wait()->**
+* **Belongs to:** Object class (instance method)
+* **Used for:** Making the current thread wait until it's notified (or timed out).
+* **Lock behavior:** Releases the lock (monitor) on the object it's called on.
+* **Must be called inside:** A synchronized block/method.
+* **Exception:** Throws InterruptedException.
+* **Use case:** Used in inter-thread communication (e.g., producer-consumer).
+
+**What Happends to the idle Thread Once notify() or notifyAll() is Called?**
+When notify() or notifyAll() is called, the waiting thread does not immediately start running. Instead, it follows these steps: 
+
+1. When another thread calls notify(), one waiting thread is moved to the Blocked (or Runnable) State, but it does not start execution immediately. 
+2. The notified thread cannot resume execution until it successfully acquires the lock on the synchronized object. 
+3. If multiple threads are waiting, only one gets notified by notify(), while notifyAll() wakes up all waiting threads (but they still compete for the lock). 
+4. Once the thread reacquires the lock, it continues execution from where it called wait().
+
+**What Happens to the Resource a Thread Was Holding when the wait() method is called?**  
+1. When a thread calls wait(), it releases the lock on the synchronized object it was holding. 
+2. Other threads can now acquire the lock and continue execution. 
+3. The waiting thread remains idle until another thread calls notify() or notifyAll().
+
+**What Happens to the Resource a Thread Was Holding when the sleep() method is called?** 
+1. When a thread calls sleep(), it pauses execution for the specified time. 
+2. However, it does NOT release any locks it was holding. 
+3. Other threads cannot access synchronized resources held by the sleeping thread.
 
 
+ ‍
 
