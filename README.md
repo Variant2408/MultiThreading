@@ -697,6 +697,36 @@ When notify() or notifyAll() is called, the waiting thread does not immediately 
 2. However, it does NOT release any locks it was holding. 
 3. Other threads cannot access synchronized resources held by the sleeping thread.
 
+**what is thread Starvation?**
+A thread is starved when it’s ready to run but never gets scheduled or keeps getting blocked because other threads keep taking priority.
+⚠️**Common Causes of Starvation:**
+1. **High-priority threads monopolize CPU**
+Lower-priority threads never get CPU time if higher-priority ones are always runnable.
+
+2. **Synchronized blocks with unfair locking**
+If locks are not fairly granted (like using synchronized blocks), one thread might never acquire the lock.
+
+3. **Improper use of thread pools or semaphores**
+Threads waiting on a limited pool of resources might never get access if others keep hogging them.
+
+✅ **Solutions to Avoid Starvation:**
+* Use fair locks:
+Java's ReentrantLock has a fairness option:
+* Avoid thread priority abuse:
+Don’t heavily rely on Thread.setPriority().
+
+* Use modern concurrency utilities:
+Like Executors, Semaphore, CountDownLatch, which are designed to reduce such issues.
+
+**Thread Executors in Java: The Power of Structured Concurrency 🚀⚙️**
+Thread Executors are a high-level concurrency framework in Java that provide a powerful abstraction over thread management. They simplify the complex task of creating, scheduling, and controlling threads, allowing developers to focus on business logic rather than thread lifecycle management. This article explores Thread Executors and their most critical methods for effective concurrent programming.
+
+
+
+‍
+
+
+
 
  ‍
 
